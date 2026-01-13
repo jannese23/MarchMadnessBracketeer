@@ -114,7 +114,6 @@ def date_generator(start_date, end_date):
         yield d
         d += timedelta(days=1)
 
-
 def populate_sql_games_in_date_range(database):
     """
     Docstring for populate_sql_games_in_date_range
@@ -149,19 +148,20 @@ def populate_sql_games_in_date_range(database):
     conn.commit()
     conn.close()
 
-def get_all_gameIDs(database):
+def get_all_gameUrls(database):
     """
-    Get all game IDs from the database.
+    Get all game URLs from the database.
     
     :param database: Path to the SQLite database file.
-    :return: List of all game IDs.
+    :return: List of all game URLs.
     """
     conn = sqlite3.connect(database)
     c = conn.cursor()
-    c.execute("SELECT gameID FROM games")
+    c.execute("SELECT gameURL FROM games")
     rows = c.fetchall()
     conn.close()
-    print(f"Retrieved {len(rows)} game IDs from the database.")
+    print(f"Retrieved {len(rows)} game URLs from the database.")
+    print("Sample game URLs:", [row[0] for row in rows[:5]])
 
 def get_data_json(path):
     """
@@ -213,6 +213,14 @@ def call_api(conn, path, verbose=False, pause=0.25):
     time.sleep(pause)
     return raw_data
 
+def get_game_boxscore(gameID_Url):
+    """
+    Get the boxscore data for a specific game.
+    
+    :param gameID_Url: Game URL.
+    :return: Boxscore JSON data.
+    """
+    return get_data_json(f"{gameID_Url}/boxscore")
 
 if __name__ == "__main__":
-    populate_sql_games_in_date_range('games.db')
+    get_all_gameUrls('games.db')
