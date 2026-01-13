@@ -36,16 +36,6 @@ def make_school_key():
     conn.commit()
     conn.close()
 
-def append_list_as_row(list_of_elem):
-    """
-    Docstring for append_list_as_row
-    
-    :param list_of_elem: List of elements to append as a row in CSV.
-    """
-    with open("games.csv", "a", newline="") as write_obj:
-        csv_writer = csv.writer(write_obj)
-        csv_writer.writerow(list_of_elem)
-
 def create_game_sql_execution(year, month, day, cursor):
     """
     Docstring for create_game_sql_execution
