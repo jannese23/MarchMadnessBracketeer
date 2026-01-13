@@ -136,17 +136,32 @@ def populate_sql_games_in_date_range(database):
                  (gameID TEXT PRIMARY KEY, gameURL TEXT, awayTeam TEXT, awayScore INTEGER
                     , awayRank INTEGER, homeTeam TEXT, homeScore INTEGER, homeRank INTEGER)''')
 
-    for d in date_generator(start_date, end_date):
+    last_date = None
+    for date in date_generator(start_date, end_date):
         try: 
-            create_game_sql_execution(d.year, d.month, d.day, c)
+            create_game_sql_execution(date.year, date.month, date.day, c)
         except Exception as e:
-            print(f"Error processing date {d}: {e}, last successful date: {last_date}. Aborting further processing.")
+            print(f"Error processing date {date}: {e}, last successful date: {last_date}. Aborting further processing.")
             conn.commit()
             conn.close()
-        last_date = d
+        last_date = date
     
     conn.commit()
     conn.close()
+
+def get_all_gameIDs(database):
+    """
+    Get all game IDs from the database.
+    
+    :param database: Path to the SQLite database file.
+    :return: List of all game IDs.
+    """
+    conn = sqlite3.connect(database)
+    c = conn.cursor()
+    c.execute("SELECT gameID FROM games")
+    rows = c.fetchall()
+    conn.close()
+    print(f"Retrieved {len(rows)} game IDs from the database.")
 
 def get_data_json(path):
     """
