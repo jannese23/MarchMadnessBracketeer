@@ -1,4 +1,3 @@
-import csv
 from datetime import date, timedelta
 import http.client
 import json
@@ -46,6 +45,7 @@ def create_game_sql_execution(year, month, day, cursor):
     :param cursor: SQLite cursor object.
     """
     sd = get_schedule_day(year, month, day)
+    game_date = date(year, month, day).isoformat()
 
     for game in sd["games"]:
         if game['game']['gameState'] == "final":
@@ -64,10 +64,10 @@ def create_game_sql_execution(year, month, day, cursor):
                     f.write(f"{gameID}: {awayTeam} {awayScore} - {homeTeam} {homeScore}\n")
 
             cursor.execute('''INSERT OR IGNORE INTO games (gameID, gameURL, awayTeam, awayScore, awayRank,
-                        homeTeam, homeScore, homeRank)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?)''',
+                        homeTeam, homeScore, homeRank, game_date)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)''',
                         (gameID, gameURL, awayTeam, awayScore, awayRank,
-                        homeTeam, homeScore, homeRank))
+                        homeTeam, homeScore, homeRank, game_date))
 
 def get_schedule_day(year, month, day):
     path = f"/scoreboard/basketball-men/d1/{year:04d}/{month:02d}/{day:02d}/all-conf"
@@ -134,18 +134,18 @@ def populate_sql_games_in_date_range(database):
 
     c.execute('''CREATE TABLE IF NOT EXISTS games
                  (gameID TEXT PRIMARY KEY, gameURL TEXT, awayTeam TEXT, awayScore INTEGER
-                    , awayRank INTEGER, homeTeam TEXT, homeScore INTEGER, homeRank INTEGER)''')
+                    , awayRank INTEGER, homeTeam TEXT, homeScore INTEGER, homeRank INTEGER, game_date DATE)''')
 
     last_date = None
-    for date in date_generator(start_date, end_date):
+    for current_date in date_generator(start_date, end_date):
         try: 
-            create_game_sql_execution(date.year, date.month, date.day, c)
+            create_game_sql_execution(current_date.year, current_date.month, current_date.day, c)
         except Exception as e:
-            print(f"Error processing date {date}: {e}, last successful date: {last_date}. Aborting further processing.")
+            print(f"Error processing date {current_date}: {e}, last successful date: {last_date}. Aborting further processing.")
             conn.commit()
             conn.close()
-        last_date = date
-    
+        last_date = current_date
+
     conn.commit()
     conn.close()
 
@@ -215,7 +215,4 @@ def call_api(conn, path, verbose=False, pause=0.25):
 
 
 if __name__ == "__main__":
-    #append_sd_to_csv(2024, 3, 15)
-    make_school_key()
-    #print(get_data_json("/game/6291328/team-stats"))
-    #fetch_games_in_date_range()
+    populate_sql_games_in_date_range('games.db')
