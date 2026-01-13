@@ -2,32 +2,36 @@ import csv
 from datetime import date, timedelta
 import http.client
 import json
+import sqlite3
 import time
 
 def make_school_key():
     data = get_data_json("/schools-index")
-    with open("school_key.csv", "w", newline="") as write_obj:
-        csv_writer = csv.writer(write_obj)
-        csv_writer.writerow(["slug", "name", "long"])
-        for school in data:
-            try:
-                slug = school['slug']
-            except KeyError:
-                slug = ""
-            try:
-                name = school['name']
-            except KeyError:
-                name = ""
-            try:
-                long = school['long']
-            except KeyError:
-                long = ""
-            if not (slug == "" and name == "" and long == ""):
-                csv_writer.writerow([
-                    slug,
-                    name,
-                    long
-                ])
+    conn = sqlite3.connect('school_key.db')
+
+    c = conn.cursor()
+    c.execute('''CREATE TABLE IF NOT EXISTS school_key
+                    (slug TEXT PRIMARY KEY, name TEXT, longname TEXT)''')
+    
+    for school in data:
+        try:
+            slug = school['slug']
+        except KeyError:
+            slug = ""
+        try:
+            name = school['name']
+        except KeyError:
+            name = ""
+        try:
+            long = school['long']
+        except KeyError:
+            long = ""
+
+        c.execute('''INSERT OR IGNORE INTO school_key (slug, name, longname)
+                VALUES (?, ?, ?)''', (slug, name, long))
+    
+    conn.commit()
+    conn.close()
 
 def append_list_as_row(list_of_elem):
     with open("games.csv", "a", newline="") as write_obj:
@@ -149,6 +153,6 @@ def call_api(conn, path, verbose=False, pause=0.25):
 
 if __name__ == "__main__":
     #append_sd_to_csv(2024, 3, 15)
-    #make_school_key()
+    make_school_key()
     #print(get_data_json("/game/6291328/team-stats"))
-    fetch_games_in_date_range()
+    #fetch_games_in_date_range()
