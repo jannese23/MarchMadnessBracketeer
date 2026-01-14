@@ -216,31 +216,25 @@ def create_game_sql_execution(year, month, day, cursor):
                         homeTeam, homeScore, homeRank, game_date))
 
 def create_boxscore_sql_execution(gameURL, cursor):
-    print("Processing boxscore for:", gameURL)
     boxscore = get_game_boxscore(gameURL)
-    print("Retrieved boxscore data.")
 
     if boxscore['teams'][0]['isHome']:
         homeTeamId, awayTeamId = int(boxscore['teams'][0]['teamId']), int(boxscore['teams'][1]['teamId'])
     else:
         homeTeamId, awayTeamId = int(boxscore['teams'][1]['teamId']), int(boxscore['teams'][0]['teamId'])
-    print("Identified home and away team IDs.")
 
     boxscore_data = dict()
     boxscore_data[boxscore['teamBoxscore'][0]['teamId']] = boxscore['teamBoxscore'][0]
     boxscore_data[boxscore['teamBoxscore'][1]['teamId']] = boxscore['teamBoxscore'][1]
-    print("Organized boxscore data by team ID.")
 
     homePlayerStats = boxscore_data[homeTeamId]['playerStats']
-    awayPlayerStats = boxscore_data[awayTeamId]['playerStats']
-    print("Extracted player stats for home and away teams.")   
+    awayPlayerStats = boxscore_data[awayTeamId]['playerStats']  
 
     for player in homePlayerStats:
         playerTeamId = homeTeamId
         isHome = True
         playerId = player['lastName'] + "_" + str(player['id'])
         starter = True if player['starter'] else False
-        print(f"Processing player: {playerId}, Starter: {starter}")
 
         minutesPlayed = int(player['minutesPlayed']) if player['minutesPlayed'] != '' else 0
 
@@ -250,7 +244,6 @@ def create_boxscore_sql_execution(gameURL, cursor):
             fgPercentage = float(fgMade) / fgAttempted
         else:
             fgPercentage = 0.0
-        print(f"FG Made: {fgMade}, FG Attempted: {fgAttempted}, FG%: {fgPercentage:.3f}")
 
         threePMade = int(player['threePointsMade']) if player['threePointsMade'] != '' else 0
         threePAttempted = int(player['threePointsAttempted']) if player['threePointsAttempted'] != '' else 0
@@ -258,7 +251,6 @@ def create_boxscore_sql_execution(gameURL, cursor):
             threePPercentage = float(threePMade) / threePAttempted
         else:
             threePPercentage = 0.0
-        print(f"3P Made: {threePMade}, 3P Attempted: {threePAttempted}, 3P%: {threePPercentage:.3f}")
 
         ftMade = int(player['freeThrowsMade']) if player['freeThrowsMade'] != '' else 0
         ftAttempted = int(player['freeThrowsAttempted']) if player['freeThrowsAttempted'] != '' else 0
@@ -266,7 +258,6 @@ def create_boxscore_sql_execution(gameURL, cursor):
             ftPercentage = float(ftMade) / ftAttempted
         else:
             ftPercentage = 0.0
-        print(f"FT Made: {ftMade}, FT Attempted: {ftAttempted}, FT%: {ftPercentage:.3f}")
 
         offReb = int(player['offensiveRebounds']) if player['offensiveRebounds'] != '' else 0
         totReb = int(player['totalRebounds']) if player['totalRebounds'] != '' else 0
@@ -276,8 +267,7 @@ def create_boxscore_sql_execution(gameURL, cursor):
         steals = int(player['steals']) if player['steals'] != '' else 0
         blocks = int(player['blockedShots']) if player['blockedShots'] != '' else 0
         points = int(player['points']) if player['points'] != '' else 0
-        print(f"OffReb: {offReb}, TotReb: {totReb}, Assists: {assists}, Turnovers: {turnovers}, PF: {personalFouls}, Steals: {steals}, Blocks: {blocks}, Points: {points}")
-
+    
         cursor.execute('''INSERT OR IGNORE INTO boxscores (gameURL, playerId, playerTeamId, isHome, starter,
                     minutesPlayed, fieldGoalsMade, fieldGoalsAttempted, fieldGoalPercentage, threePointsMade, 
                     threePointsAttempted, threePointPercentage, freeThrowsMade, freeThrowsAttempted, 
