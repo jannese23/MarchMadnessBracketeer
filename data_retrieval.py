@@ -11,7 +11,7 @@ import time
 
 def get_data_json(path):
     """
-    Docstring for get_data_json
+    Gets JSON data from the API.
     
     :param path: API endpoint path.
     :return: Parsed JSON data.
@@ -22,7 +22,7 @@ def get_data_json(path):
 
 def get_data_text(path):
     """
-    Docstring for get_data_text
+    Gets raw data from the API.
     
     :param path: Description
     :return: Raw data as bytes.
@@ -36,7 +36,7 @@ def get_data_text(path):
     
 def call_api(conn, path, verbose=False, pause=0.25):
     """
-    Docstring for call_api
+    Calls the API and retrieves raw data.
     
     :param conn: HTTP connection object.
     :param path: API endpoint path.
@@ -109,7 +109,7 @@ def make_school_key():
 
 def populate_sql_games_in_date_range(database):
     """
-    Docstring for populate_sql_games_in_date_range
+    Populate the games table in the database for a specified date range.
     
     :param database: Path to the SQLite database file.
     """
@@ -146,7 +146,7 @@ def populate_sql_games_in_date_range(database):
 
 def populate_sql_boxscores(database):
     """
-    Docstring for populate_sql_boxscores
+    Populate the boxscores table in the database.
 
     :param database: Path to the SQLite database file.
     """
@@ -173,8 +173,11 @@ def populate_sql_boxscores(database):
         if keyboard.is_pressed('q'):
             print("Keyboard interrupt detected. Stopping boxscore population.")
             break
-        
-    conn.commit()
+    
+    try:
+        conn.commit()
+    except Exception as e:
+        print(f"Error during final commit: {e}")
     conn.close()
 
 # =====================
@@ -183,7 +186,7 @@ def populate_sql_boxscores(database):
 
 def create_game_sql_execution(year, month, day, cursor):
     """
-    Docstring for create_game_sql_execution
+    Creates SQL execution for games on a specific day.
 
     :param year: Year of the game.
     :param month: Month of the game.
@@ -364,7 +367,7 @@ def date_generator(start_date, end_date):
 
 def get_game_scores(gameID_Url):
     """
-    Docstring for get_game_scores
+    Get specific game scores from the team-stats endpoint.
     
     :param gameID_Url: Game URL.
     :return: Tuple of (awayScore, homeScore).
@@ -396,5 +399,12 @@ def get_game_scores(gameID_Url):
 
     return awayScore, homeScore
 
+# ======================
+# * Workflow Execution *
+# ======================
+
+def one_year_workflow(year, month, day):
+    populate_sql_games_in_date_range("games.db", date(year, month, day), date(year, month, day))
+    populate_sql_boxscores("games.db")
 if __name__ == "__main__":
     populate_sql_boxscores("games.db")
