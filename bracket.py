@@ -1,4 +1,5 @@
 def compare_brackets(predicted, real):
+    correct = 0
     for matchup in real.keys():
         return predicted[matchup][0] == real[matchup][0], predicted[matchup][1], real[matchup][1]
     
