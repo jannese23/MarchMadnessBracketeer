@@ -74,7 +74,7 @@ def get_game_boxscore(gameID_Url):
 
 # =======================
 # * Database Population *
-# =======================
+# =======================   FIX DATABASE ENTRY TO INPUT SEASON AS WELL
 
 def make_school_key():
     """
@@ -126,7 +126,7 @@ def populate_sql_games_in_date_range(database):
 
     c.execute('''CREATE TABLE IF NOT EXISTS games
                  (gameID TEXT PRIMARY KEY, gameURL TEXT, awayTeam TEXT, awayScore INTEGER
-                    , awayRank INTEGER, homeTeam TEXT, homeScore INTEGER, homeRank INTEGER, game_date DATE)''')
+                    , awayRank INTEGER, homeTeam TEXT, homeScore INTEGER, homeRank INTEGER, gameDate DATE)''')
 
     last_date = None
     for current_date in date_generator(start_date, end_date):
@@ -407,4 +407,4 @@ def one_year_workflow(year, month, day):
     populate_sql_games_in_date_range("games.db", date(year, month, day), date(year, month, day))
     populate_sql_boxscores("games.db")
 if __name__ == "__main__":
-    populate_sql_boxscores("games.db")
+    print(get_schedule_day(2024, 4, 8))
