@@ -193,6 +193,7 @@ def create_game_sql_execution(year, month, day, cursor):
     :param day: Day of the game.
     :param cursor: SQLite cursor object.
     """
+
     sd = get_schedule_day(year, month, day)
     game_date = date(year, month, day).isoformat()
 
@@ -399,6 +400,37 @@ def get_game_scores(gameID_Url):
 
     return awayScore, homeScore
 
+def get_season_range(year):
+    """
+    Gets the date range of a NCAA season prior to a March Madness tournament
+
+    :param year: Year of March Madness tournament
+    :returns tuple:
+    """
+    tempDate = date(year, 11, 3)
+    scheduleLen = len(get_schedule_day(tempDate.year, tempDate.month, tempDate.day)['games'])
+
+    while scheduleLen == 0:
+        tempDate += timedelta(days=1)
+        scheduleLen = len(get_schedule_day(tempDate.year, tempDate.month, tempDate.day)['games'])
+
+    checkDate = tempDate + timedelta(days=-1)
+    scheduleLen = len(get_schedule_day(checkDate.year, checkDate.month, checkDate.day)['games'])
+
+    while scheduleLen != 0:
+        tempDate = checkDate
+        checkDate += timedelta(days=-1)
+        scheduleLen = len(get_schedule_day(checkDate.year, checkDate.month, checkDate.day)['games'])
+    
+
+    print(scheduleLen)
+    print(tempDate)
+    games = get_schedule_day(tempDate.year, tempDate.month, tempDate.day)['games']
+    print(json.dumps(games)[:1800])
+    print(games[0])
+    print(len(games))
+    
+
 # ======================
 # * Workflow Execution *
 # ======================
@@ -407,4 +439,4 @@ def one_year_workflow(year, month, day):
     populate_sql_games_in_date_range("games.db", date(year, month, day), date(year, month, day))
     populate_sql_boxscores("games.db")
 if __name__ == "__main__":
-    print(get_schedule_day(2024, 4, 8))
+    print(get_season_range(2024))
