@@ -61,6 +61,10 @@ def call_api(conn, path, verbose=False, pause=0.25):
 
 def get_schedule_day(year, month, day):
     path = f"/scoreboard/basketball-men/d1/{year:04d}/{month:02d}/{day:02d}/all-conf"
+    try:
+        get_data_json(path)
+    except:
+        return 0
     return get_data_json(path)
 
 def get_game_boxscore(gameID_Url):
@@ -408,19 +412,32 @@ def get_season_range(year):
     :returns tuple:
     """
     tempDate = date(year, 11, 3)
-    scheduleLen = len(get_schedule_day(tempDate.year, tempDate.month, tempDate.day)['games'])
+    scheduleDay = get_schedule_day(tempDate.year, tempDate.month, tempDate.day)['games']
+    if scheduleDay:
+        scheduleLen = len(scheduleDay)
+    else:
+        scheduleLen = 0
 
     while scheduleLen == 0:
         tempDate += timedelta(days=1)
-        scheduleLen = len(get_schedule_day(tempDate.year, tempDate.month, tempDate.day)['games'])
+        scheduleDay = get_schedule_day(tempDate.year, tempDate.month, tempDate.day)['games']
+        if scheduleDay:
+            scheduleLen = len(scheduleDay)
+        else:
+            scheduleLen = 0
 
     checkDate = tempDate + timedelta(days=-1)
-    scheduleLen = len(get_schedule_day(checkDate.year, checkDate.month, checkDate.day)['games'])
+    scheduleDay = get_schedule_day(tempDate.year, tempDate.month, tempDate.day)['games']
+    if scheduleDay:
+        scheduleLen = len(scheduleDay)
+    else:
+        scheduleLen = 0
 
     while scheduleLen != 0:
         tempDate = checkDate
         checkDate += timedelta(days=-1)
-        scheduleLen = len(get_schedule_day(checkDate.year, checkDate.month, checkDate.day)['games'])
+        scheduleDay = get_schedule_day(checkDate.year, checkDate.month, checkDate.day)['games']
+        scheduleLen = len(scheduleDay)
     
 
     # To get the status of if a game is in march madness: ['games'][0]['game']['bracketRound']
@@ -441,4 +458,4 @@ def one_year_workflow(year, month, day):
     populate_sql_games_in_date_range("games.db", date(year, month, day), date(year, month, day))
     populate_sql_boxscores("games.db")
 if __name__ == "__main__":
-    print(get_schedule_day(2025, 3, 17)['games'][0]['game']['bracketRound'])
+    print(get_schedule_day(2025, 3, 18)['games'][0]['game'])
