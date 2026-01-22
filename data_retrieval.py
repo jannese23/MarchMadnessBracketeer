@@ -423,13 +423,15 @@ def get_season_range(year):
         scheduleLen = len(get_schedule_day(checkDate.year, checkDate.month, checkDate.day)['games'])
     
 
-    print(scheduleLen)
-    print(tempDate)
+    # To get the status of if a game is in march madness: ['games'][0]['game']['bracketRound']
+    # len(['games'])
+    #print(scheduleLen)
+    #print(tempDate)
     games = get_schedule_day(tempDate.year, tempDate.month, tempDate.day)['games']
-    print(json.dumps(games)[:1800])
-    print(games[0])
-    print(len(games))
-    
+    #print(json.dumps(games)[:1800])
+    # print(games[0])
+    # print(len(games))
+    print(games['bracketRound'])
 
 # ======================
 # * Workflow Execution *
@@ -439,4 +441,4 @@ def one_year_workflow(year, month, day):
     populate_sql_games_in_date_range("games.db", date(year, month, day), date(year, month, day))
     populate_sql_boxscores("games.db")
 if __name__ == "__main__":
-    print(get_season_range(2024))
+    print(get_schedule_day(2025, 3, 17)['games'][0]['game']['bracketRound'])
