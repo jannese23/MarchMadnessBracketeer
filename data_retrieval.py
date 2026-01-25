@@ -411,51 +411,76 @@ def get_season_range(year):
     :param year: Year of March Madness tournament
     :returns tuple:
     """
-    tempDate = date(year, 11, 3)
-    scheduleDay = get_schedule_day(tempDate.year, tempDate.month, tempDate.day)['games']
+    tempDate = date(year-1, 11, 3)
+    scheduleDay = get_schedule_day(tempDate.year, tempDate.month, tempDate.day)
     if scheduleDay:
-        scheduleLen = len(scheduleDay)
+        scheduleLen = len(scheduleDay['games'])
     else:
         scheduleLen = 0
 
     while scheduleLen == 0:
         tempDate += timedelta(days=1)
-        scheduleDay = get_schedule_day(tempDate.year, tempDate.month, tempDate.day)['games']
+        scheduleDay = get_schedule_day(tempDate.year, tempDate.month, tempDate.day)
         if scheduleDay:
-            scheduleLen = len(scheduleDay)
+            scheduleLen = len(scheduleDay['games'])
         else:
             scheduleLen = 0
 
     checkDate = tempDate + timedelta(days=-1)
-    scheduleDay = get_schedule_day(tempDate.year, tempDate.month, tempDate.day)['games']
+    scheduleDay = get_schedule_day(checkDate.year, checkDate.month, checkDate.day)
     if scheduleDay:
-        scheduleLen = len(scheduleDay)
+        scheduleLen = len(scheduleDay['games'])
     else:
         scheduleLen = 0
 
     while scheduleLen != 0:
         tempDate = checkDate
         checkDate += timedelta(days=-1)
-        scheduleDay = get_schedule_day(checkDate.year, checkDate.month, checkDate.day)['games']
-        scheduleLen = len(scheduleDay)
+        scheduleDay = get_schedule_day(checkDate.year, checkDate.month, checkDate.day)
+        if scheduleDay:
+            scheduleLen = len(scheduleDay['games'])
+        else:
+            scheduleLen = 0
     
+    start = tempDate
+    print(f"Start date: {start}")
 
-    # To get the status of if a game is in march madness: ['games'][0]['game']['bracketRound']
-    # len(['games'])
-    #print(scheduleLen)
-    #print(tempDate)
-    games = get_schedule_day(tempDate.year, tempDate.month, tempDate.day)['games']
-    #print(json.dumps(games)[:1800])
-    # print(games[0])
-    # print(len(games))
-    print(games['bracketRound'])
+    tempDate = date(year, 3, 1)
+    
+    scheduleDay = get_schedule_day(tempDate.year, tempDate.month, tempDate.day)
+    if scheduleDay and len(scheduleDay['games']):
+        bracketRound = check_bracket_round(scheduleDay['games'])
+    else:
+        bracketRound = ''
+
+    while bracketRound == '':
+        tempDate += timedelta(days=1)
+        scheduleDay = get_schedule_day(tempDate.year, tempDate.month, tempDate.day)
+        if scheduleDay and len(scheduleDay['games']):
+            bracketRound = check_bracket_round(scheduleDay['games'])   
+        else:
+            bracketRound = ''
+        
+    end = tempDate
+    print(f"End Date: {end}")
+
+def check_bracket_round(games):
+    for game in games:
+        if 'FIRST FOUR' in game['game']['bracketRound']:
+            return 'FIRST FOUR'
+        elif game['game']['bracketRound'] == '':
+            return ''
+    return ''
 
 # ======================
 # * Workflow Execution *
 # ======================
 
-def one_year_workflow(year, month, day):
-    populate_sql_games_in_date_range("games.db", date(year, month, day), date(year, month, day))
+def one_year_workflow(year):
+    start, end = get_season_range(year)
+    populate_sql_games_in_date_range("games.db", date(start.year, start.month, start.day), date(end.year, end.month, end.day))
     populate_sql_boxscores("games.db")
+
 if __name__ == "__main__":
-    print(get_schedule_day(2025, 3, 18)['games'][0]['game'])
+    #print(get_schedule_day(2022, 11, 7)['games'][0]['game'])
+    #get_season_range(2023)
