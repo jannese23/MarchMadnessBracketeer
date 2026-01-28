@@ -478,9 +478,11 @@ def check_bracket_round(games):
 
 def one_year_workflow(year):
     start, end = get_season_range(year)
+
     populate_sql_games_in_date_range("games.db", date(start.year, start.month, start.day), date(end.year, end.month, end.day))
     populate_sql_boxscores("games.db")
 
 if __name__ == "__main__":
     #print(get_schedule_day(2022, 11, 7)['games'][0]['game'])
     #get_season_range(2023)
+    one_year_workflow(2023)
