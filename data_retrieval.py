@@ -111,26 +111,30 @@ def make_school_key():
     conn.commit()
     conn.close()
 
-def populate_sql_games_in_date_range(database):
+def populate_sql_games_in_date_range(database, start, end, verbose=False):
     """
     Populate the games table in the database for a specified date range.
     
     :param database: Path to the SQLite database file.
     """
-    print("Enter start date (YYYY-MM-DD): ")
-    start_input = input()
-    print("Enter end date (YYYY-MM-DD): ")
-    end_input = input()
+    if verbose:
+        print("Enter start date (YYYY-MM-DD): ")
+        start_input = input()
+        print("Enter end date (YYYY-MM-DD): ")
+        end_input = input()
 
-    start_date = date.fromisoformat(start_input)
-    end_date = date.fromisoformat(end_input)
+        start_date = date.fromisoformat(start_input)
+        end_date = date.fromisoformat(end_input)
+    else:
+        start_input = start
+        end_input = end
 
     conn = sqlite3.connect(database)
     c = conn.cursor()
 
     c.execute('''CREATE TABLE IF NOT EXISTS games
                  (gameID TEXT PRIMARY KEY, gameURL TEXT, awayTeam TEXT, awayScore INTEGER
-                    , awayRank INTEGER, homeTeam TEXT, homeScore INTEGER, homeRank INTEGER, gameDate DATE)''')
+                    , awayRank INTEGER, homeTeam TEXT, homeScore INTEGER, homeRank INTEGER, game_date DATE)''')
 
     last_date = None
     for current_date in date_generator(start_date, end_date):
@@ -148,7 +152,7 @@ def populate_sql_games_in_date_range(database):
         print(f"Error during final commit: {e}")
     conn.close()
 
-def populate_sql_boxscores(database):
+def populate_sql_boxscores(database, start, end):
     """
     Populate the boxscores table in the database.
 
@@ -165,7 +169,7 @@ def populate_sql_boxscores(database):
                     offensiveRebounds INTEGER, totalRebounds INTEGER, assists INTEGER, turnovers INTEGER,
                     personalFouls INTEGER, steals INTEGER, blockedShots INTEGER, points INTEGER,
                     PRIMARY KEY (gameURL, playerId))''')
-    gameURLs = get_all_gameUrls(database)
+    gameURLs = get_all_gameUrls(database, start, end)
 
     for gameURL in gameURLs:
         try:
@@ -343,7 +347,7 @@ def create_boxscore_sql_execution(gameURL, cursor):
 # * Query Functions *
 # ===================
 
-def get_all_gameUrls(database):
+def get_all_gameUrls(database, start, end):
     """
     Get all game URLs from the database.
     
@@ -353,7 +357,9 @@ def get_all_gameUrls(database):
 
     conn = sqlite3.connect(database)
     c = conn.cursor()
-    c.execute("SELECT gameURL FROM games order by game_date ASC")
+    c.execute("""SELECT gameURL FROM games 
+                 WHERE game_date BETWEEN ? AND ? 
+                 order by game_date ASC""", (start, end))
     rows = c.fetchall()
     conn.close()
 
@@ -476,13 +482,16 @@ def check_bracket_round(games):
 # * Workflow Execution *
 # ======================
 
-def one_year_workflow(year):
+def one_year_retrieval_workflow(year):
+
+    # First get range
     start, end = get_season_range(year)
 
-    populate_sql_games_in_date_range("games.db", date(start.year, start.month, start.day), date(end.year, end.month, end.day))
-    populate_sql_boxscores("games.db")
+    # Populate data
+    populate_sql_games_in_date_range("data/games.db", start, end)
+    populate_sql_boxscores("data/games.db", start, end)
 
 if __name__ == "__main__":
-    #print(get_schedule_day(2022, 11, 7)['games'][0]['game'])
-    #get_season_range(2023)
-    one_year_workflow(2023)
+    year = input("Enter Year: ")
+    print(f"Processing games prior to {year} March Madness Tournament")
+    one_year_retrieval_workflow(year)
