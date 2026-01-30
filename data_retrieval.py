@@ -34,14 +34,14 @@ def get_data_text(path):
         conn.close()
     return raw_data
     
-def call_api(conn, path, verbose=False, pause=0.25):
+def call_api(conn, path, verbose=False, pause=0.20):
     """
     Calls the API and retrieves raw data.
     
     :param conn: HTTP connection object.
     :param path: API endpoint path.
     :param verbose: Boolean flag for debugging output.
-    :param pause: Pause duration in seconds between calls. (default 0.25s because of 4 calls/sec rate limit)
+    :param pause: Pause duration in seconds between calls. (default 0.20s because of 5 calls/sec rate limit)
     :return: Raw data as bytes.
     """
     conn.request("GET", path)
@@ -111,13 +111,13 @@ def make_school_key():
     conn.commit()
     conn.close()
 
-def populate_sql_games_in_date_range(database, start, end, verbose=False):
+def populate_sql_games_in_date_range(database, start, end, manual=False, verbose=False):
     """
     Populate the games table in the database for a specified date range.
     
     :param database: Path to the SQLite database file.
     """
-    if verbose:
+    if manual:
         print("Enter start date (YYYY-MM-DD): ")
         start_input = input()
         print("Enter end date (YYYY-MM-DD): ")
@@ -126,8 +126,8 @@ def populate_sql_games_in_date_range(database, start, end, verbose=False):
         start_date = date.fromisoformat(start_input)
         end_date = date.fromisoformat(end_input)
     else:
-        start_input = start
-        end_input = end
+        start_date = start
+        end_date = end
 
     conn = sqlite3.connect(database)
     c = conn.cursor()
@@ -135,17 +135,19 @@ def populate_sql_games_in_date_range(database, start, end, verbose=False):
     c.execute('''CREATE TABLE IF NOT EXISTS games
                  (gameID TEXT PRIMARY KEY, gameURL TEXT, awayTeam TEXT, awayScore INTEGER
                     , awayRank INTEGER, homeTeam TEXT, homeScore INTEGER, homeRank INTEGER, game_date DATE)''')
-
+    print("Retrieving all schedules")
     last_date = None
     for current_date in date_generator(start_date, end_date):
+        print(f"Retrieved {current_date}", end="\r")
         try: 
             create_game_sql_execution(current_date.year, current_date.month, current_date.day, c)
         except Exception as e:
-            print(f"Error processing date {current_date}: {e}, last successful date: {last_date}. Aborting further processing.")
+            print(f"\nError processing date {current_date}: {e}, last successful date: {last_date}. Aborting further processing.")
             conn.commit()
             conn.close()
             break
         last_date = current_date
+    print()
     try:
         conn.commit()
     except Exception as e:
@@ -171,16 +173,20 @@ def populate_sql_boxscores(database, start, end):
                     PRIMARY KEY (gameURL, playerId))''')
     gameURLs = get_all_gameUrls(database, start, end)
 
+    gameCount = len(gameURLs)
+    gameIndex = 1
+
     for gameURL in gameURLs:
         try:
             create_boxscore_sql_execution(gameURL, c)
-            print(f"Processed boxscore for {gameURL}")
+            print(f"({gameIndex}/{gameCount}) Game boxscores retrieved.    ", end="\r")
         except Exception as e:
             print(f"Error processing boxscore for {gameURL}: {e}. Continuing to next.")
         # KeyboardInterrupt handling can be added here if desired
         if keyboard.is_pressed('q'):
             print("Keyboard interrupt detected. Stopping boxscore population.")
             break
+        gameIndex += 1
     
     try:
         conn.commit()
@@ -203,29 +209,30 @@ def create_game_sql_execution(year, month, day, cursor):
     """
 
     sd = get_schedule_day(year, month, day)
-    game_date = date(year, month, day).isoformat()
+    if sd:
+        game_date = date(year, month, day).isoformat()
 
-    for game in sd["games"]:
-        if game['game']['gameState'] == "final":
-            gameID = game['game']['url'].split("/game/")[1]
-            gameURL = game['game']['url']
-            awayTeam = game['game']['away']['names']['seo'] # away team SEO name for consistency
-            awayScore = game['game']['away']['score']
-            awayRank = game['game']['away']['rank']
-            homeTeam = game['game']['home']['names']['seo'] # home team SEO name for consistency
-            homeScore = game['game']['home']['score']
-            homeRank = game['game']['home']['rank']
+        for game in sd["games"]:
+            if game['game']['gameState'] == "final":
+                gameID = game['game']['url'].split("/game/")[1]
+                gameURL = game['game']['url']
+                awayTeam = game['game']['away']['names']['seo'] # away team SEO name for consistency
+                awayScore = game['game']['away']['score']
+                awayRank = game['game']['away']['rank']
+                homeTeam = game['game']['home']['names']['seo'] # home team SEO name for consistency
+                homeScore = game['game']['home']['score']
+                homeRank = game['game']['home']['rank']
 
-            if awayScore == '' or homeScore == '':
-                awayScore, homeScore = get_game_scores(gameURL)
-                with open("faulty_scores.txt", "a") as f:
-                    f.write(f"{gameID}: {awayTeam} {awayScore} - {homeTeam} {homeScore}\n")
+                if awayScore == '' or homeScore == '':
+                    awayScore, homeScore = get_game_scores(gameURL)
+                    with open("faulty_scores.txt", "a") as f:
+                        f.write(f"{gameID}: {awayTeam} {awayScore} - {homeTeam} {homeScore}\n")
 
-            cursor.execute('''INSERT OR IGNORE INTO games (gameID, gameURL, awayTeam, awayScore, awayRank,
-                        homeTeam, homeScore, homeRank, game_date)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)''',
-                        (gameID, gameURL, awayTeam, awayScore, awayRank,
-                        homeTeam, homeScore, homeRank, game_date))
+                cursor.execute('''INSERT OR IGNORE INTO games (gameID, gameURL, awayTeam, awayScore, awayRank,
+                            homeTeam, homeScore, homeRank, game_date)
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)''',
+                            (gameID, gameURL, awayTeam, awayScore, awayRank,
+                            homeTeam, homeScore, homeRank, game_date))
 
 def create_boxscore_sql_execution(gameURL, cursor):
     boxscore = get_game_boxscore(gameURL)
@@ -469,6 +476,7 @@ def get_season_range(year):
         
     end = tempDate
     print(f"End Date: {end}")
+    return start, end
 
 def check_bracket_round(games):
     for game in games:
@@ -482,16 +490,22 @@ def check_bracket_round(games):
 # * Workflow Execution *
 # ======================
 
-def one_year_retrieval_workflow(year):
-
-    # First get range
+def one_year_retrieval_workflow(year, manual=False):
+    """
+    Generate data in SQLite db on local computer for one CBB season.
+    
+    :param year: Year of tournament
+    """
+    if manual:
+        year = int(input("Enter Year (YYYY): "))
+    print(f"Retrieving games prior to {year} March Madness Tournament")
     start, end = get_season_range(year)
 
-    # Populate data
     populate_sql_games_in_date_range("data/games.db", start, end)
     populate_sql_boxscores("data/games.db", start, end)
+    print("Finished retrieving")
 
 if __name__ == "__main__":
-    year = input("Enter Year: ")
-    print(f"Processing games prior to {year} March Madness Tournament")
-    one_year_retrieval_workflow(year)
+    one_year_retrieval_workflow(0, manual=True)
+    
+    
