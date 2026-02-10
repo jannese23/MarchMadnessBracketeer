@@ -156,7 +156,8 @@ def populate_sql_games_in_date_range(database, start, end, manual=False, verbose
 
 def populate_sql_boxscores(database, start, end):
     """
-    Populate the boxscores table in the database.
+    Populate the boxscores table in the database. 
+    The rate is ~70 game boxscores per minute
 
     :param database: Path to the SQLite database file.
     """
