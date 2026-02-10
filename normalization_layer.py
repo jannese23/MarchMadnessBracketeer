@@ -7,3 +7,7 @@ def generate_team_score():
 def team_vs_team_score():
     pass
 
+# ======================
+# * Give score to team *
+# ======================
+
