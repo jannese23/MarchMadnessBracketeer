@@ -4,6 +4,7 @@ import json
 import keyboard
 import sqlite3
 import time
+from query import get_all_gameUrls_query
 
 # ======================
 # * API Data Retrieval *
@@ -363,15 +364,7 @@ def get_all_gameUrls(database, start, end):
     :return: List of all game URLs.
     """
 
-    conn = sqlite3.connect(database)
-    c = conn.cursor()
-    c.execute("""SELECT gameURL FROM games 
-                 WHERE game_date BETWEEN ? AND ? 
-                 order by game_date ASC""", (start, end))
-    rows = c.fetchall()
-    conn.close()
-
-    return [row[0] for row in rows]
+    return get_all_gameUrls_query(database, start, end)
 
 # ====================
 # * Helper Functions *        
