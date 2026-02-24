@@ -500,6 +500,11 @@ def one_year_retrieval_workflow(year, manual=False):
     print("Finished retrieving")
 
 if __name__ == "__main__":
-    one_year_retrieval_workflow(0, manual=True)
+    data_to_write = get_schedule_day(2026, 2, 21)
+    #data_to_write = get_data_json("/game/6502344")
+    with open("output4.json", "w") as f:
+        json.dump(data_to_write, f, indent=4)
+
+    # one_year_retrieval_workflow(0, manual=True)
     
     
